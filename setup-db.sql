@@ -1,4 +1,4 @@
-CREATE TABLE turma(
+CREATE TABLE turmas(
     id_turma INT AUTO_INCREMENT PRIMARY KEY,
     nome_turma VARCHAR (100) NOT NULL,
     horario_turma TIME NOT NULL
@@ -6,10 +6,14 @@ CREATE TABLE turma(
 
 CREATE TABLE alunos(
     id_aluno INT AUTO_INCREMENT PRIMARY KEY,
-    nome_aluno VARCHAR (100) NOT NULL,
-    nota_final FLOAT DEFAULT NULL,
-    status VARCHAR (20) NOT NULL,
-    id_turma INT, 
+    nome_aluno VARCHAR(100) NOT NULL,
+    nota_final DECIMAL(3, 1) DEFAULT NULL,
+    status VARCHAR(20) NOT NULL,
+    CONSTRAINT check_status_e_nota CHECK (
+        status IN ('APROVADO', 'REPROVADO', 'PENDENTE') 
+        AND (nota_final IS NULL OR (nota_final >= 0.0 AND nota_final <= 10.0))
+    ),
+    id_turma INT,
     CONSTRAINT fk_alunos_turma FOREIGN KEY (id_turma) REFERENCES turma(id_turma)
 );
 
@@ -36,13 +40,13 @@ INSERT INTO professor (nome_professor, materia, id_turma) VALUES
 -- Criando 6 alunos (Atende o mínimo de 5 e prepara cenários para testar o Back-end)
 INSERT INTO alunos (nome_aluno, nota_final, status, id_turma) VALUES
 -- Turma 1 (Linus Torvalds)
-('Alice Silva', NULL, 'Pendente', 1),    -- Cenário: Aluno recém-matriculado sem nota
-('Bruno Souza', 8.5, 'Aprovado', 1),
+('Alice Silva', NULL, 'PENDENTE', 1),    -- Cenário: Aluno recém-matriculado sem nota
+('Bruno Souza', 8.5, 'APROVADO', 1),
 
 -- Turma 2 (Alan Turing)
-('Carlos Oliveira', 6.8, 'Pendente', 2), -- Cenário: Nota < 7. Bom para testar o bloqueio de alteração para 'Aprovado'
-('Diana Prince', 9.5, 'Aprovado', 2),
+('Carlos Oliveira', 6.8, 'PENDENTE', 2), -- Cenário: Nota < 7. Bom para testar o bloqueio de alteração para 'APROVADO'
+('Diana Prince', 9.5, 'APROVADO', 2),
 
 -- Turma 3 (Grace Hopper)
-('Eduardo Santos', 4.0, 'Reprovado', 3),
-('Fernanda Lima', 7.2, 'Pendente', 3); 
+('Eduardo Santos', 4.0, 'REPROVADO', 3),
+('Fernanda Lima', 7.2, 'PENDENTE', 3); 
