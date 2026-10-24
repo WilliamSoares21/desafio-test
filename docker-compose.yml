@@ -1,0 +1,25 @@
+services:
+  digital-college-db:
+    image: mysql:8.4
+    container_name: escola-db-container
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: escola-db
+      MYSQL_USER: usul
+      MYSQL_PASSWORD: devpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - dados-college:/var/lib/mysql
+      - ./setup-db.sql:/docker-entrypoint-initdb.d/setup-loja.sql:ro 
+  escola-api:
+    build: .
+    image: imagem-escola-api-v1
+    container_name: api-digital-college
+    ports:
+      - "3000:3000"
+    depends_on:
+      - digital-college-db
+
+volumes:
+  dados-college:
