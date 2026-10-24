@@ -11,15 +11,34 @@ services:
       - "3306:3306"
     volumes:
       - dados-college:/var/lib/mysql
-      - ./setup-db.sql:/docker-entrypoint-initdb.d/setup-loja.sql:ro 
+      - ./setup-db.sql:/docker-entrypoint-initdb.d/setup-db.sql:ro
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "usul",
+          "-pdevpass",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   escola-api:
     build: .
     image: imagem-escola-api-v1
     container_name: api-digital-college
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     depends_on:
-      - digital-college-db
+      digital-college-db:
+        condition: service_healthy
 
 volumes:
   dados-college:
