@@ -14,25 +14,25 @@ CREATE TABLE alunos(
         AND (nota_final IS NULL OR (nota_final >= 0.0 AND nota_final <= 10.0))
     ),
     id_turma INT,
-    CONSTRAINT fk_alunos_turma FOREIGN KEY (id_turma) REFERENCES turma(id_turma)
+    CONSTRAINT fk_alunos_turma FOREIGN KEY (id_turma) REFERENCES turmas(id_turma)
 );
 
-CREATE TABLE professor(
+CREATE TABLE professores(
     id_professor INT AUTO_INCREMENT PRIMARY KEY,
     nome_professor VARCHAR (100) NOT NULL,
     materia VARCHAR (100) NOT NULL,
     id_turma INT,
-    CONSTRAINT fk_professores_turma FOREIGN KEY (id_turma) REFERENCES turma(id_turma)
+    CONSTRAINT fk_professores_turma FOREIGN KEY (id_turma) REFERENCES turmas(id_turma)
 );
 
--- Criando 3 turmas (Atende o mínimo de 2)
-INSERT INTO turma (nome_turma, horario_turma) VALUES
+-- Criando 3 turmass (Atende o mínimo de 2)
+INSERT INTO turmas (nome_turma, horario_turma) VALUES
 ('Desenvolvimento Full Stack', '19:00:00'),     -- ID 1
 ('Arquitetura Full Cycle', '21:00:00'),          -- ID 2
 ('Programação Orientada a Objetos', '08:00:00'); -- ID 3
 
 -- Criando 3 professores (Atende o mínimo de 3)
-INSERT INTO professor (nome_professor, materia, id_turma) VALUES
+INSERT INTO professores (nome_professor, materia, id_turma) VALUES
 ('Linus Torvalds', 'DevOps e Web', 1),          -- Professor da Turma 1
 ('Dr. Alan Turing', 'Arquitetura Escalável', 2), -- Professor da Turma 2
 ('Profa. Grace Hopper', 'Lógica e POO', 3);     -- Professor da Turma 3
