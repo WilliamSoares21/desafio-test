@@ -10,17 +10,15 @@ const statusValidos = status;
 const buscarAlunoETurma = async (idAluno, idTurma) => {
 
   const [alunosEncontrados] = await dbConnection.query('SELECT id_aluno, id_turma FROM alunos WHERE id_aluno = ?', [idAluno]);
-  const aluno = alunosEncontrados[0];
-
   const [turmasEncontradas] = await dbConnection.query('SELECT id_turma FROM turmas WHERE id_turma = ?', [idTurma]);
-  const turma = turmasEncontradas[0];
-  if (!aluno) {
-    throw new Error("ALUNO_NAO_ENCONTRADO");
+
+  if (alunosEncontrados.length === 0) throw {
+    status:404, message: "Anluno não encontrado"
   }
-  if (!turma) {
-    throw new Error("TURMA_NAO_ENCONTRADA");
+  if (turmasEncontradas.length === 0) throw {
+    status:404, message: "Turma não encontrada"
   }
-  return { aluno, turma };
+  return true;
 };
 
 const verificarAlunoEProfessorTurma = async (id_aluno, id_turma, id_professor) => {
@@ -54,6 +52,9 @@ app.post("/matricular/:id_aluno/:id_turma", async (req, res) => {
 
     res.json({ idTurma: "Aluno Adicionado a turma" })
   } catch (e) {
+    if(e.status){
+      return res.status(e.status).json({message: e.message});
+    }
     console.log(e);
     res.status(500).json({ error: "Erro interno no servidor" });
   }
@@ -65,7 +66,6 @@ app.patch("/alterar-nota/:id_professor/:id_aluno/:id_turma", async (req, res) =>
     const { id_aluno, id_professor, id_turma } = req.params;
     const { nota_final } = req.body;
 
-    await buscarAlunoETurma(id_aluno, id_turma);
     if (!id_professor) {
       return res.status(404).json({ message: "Professor não existe logo não pode alterar nota" })
     }
@@ -78,7 +78,7 @@ app.patch("/alterar-nota/:id_professor/:id_aluno/:id_turma", async (req, res) =>
     res.json({ notaFinal: "Nota atualizada" })
   } catch (e) {
     if (e.status) {
-      res.status(e.status).json({ message: e.message });
+      return res.status(e.status).json({ message: e.message });
     }
 
     console.error(e);
@@ -86,17 +86,14 @@ app.patch("/alterar-nota/:id_professor/:id_aluno/:id_turma", async (req, res) =>
   }
 })
 
-app.patch("/alterar-status/:id_professor/:id_aluno/:id_turma", async (req, res) => {
+app.patch("/alterar-status/:id_professor/:id_aluno/:id_turma/:status", async (req, res) => {
   try {
-    const { id_professor, id_aluno, id_turma } = req.params;
-    const { status } = req.params;
+    const { id_professor, id_aluno, id_turma, status} = req.params;
 
     const statusFormatado = status?.toUpperCase();
     if (!statusValidos.includes(statusFormatado)) {
       return res.status(400).json({ message: "Status inválido! Use: APROVADO, REPROVADO ou PENDENTE." });
     }
-
-    await buscarAlunoETurma(id_aluno, id_turma);
     await verificarAlunoEProfessorTurma(id_aluno, id_turma, id_professor);
 
     const [alunos] = await dbConnection.query('SELECT nota_final FROM alunos WHERE id_aluno = ?', [id_aluno]);
