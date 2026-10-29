@@ -4,14 +4,15 @@ import { status } from './status.js';
 
 
 const app = express()
+app.use(express.json());
 await conectarBanco();
-
+const statusValidos = status;
 const buscarAlunoETurma = async (idAluno, idTurma) => {
 
   const [alunosEncontrados] = await dbConnection.query('SELECT id_aluno, id_turma FROM alunos WHERE id_aluno = ?', [idAluno]);
   const aluno = alunosEncontrados[0];
 
-  const [turmasEncontradas] = await dbConnection.query('SELECT id_turma FROM turma WHERE id_turma = ?', [idTurma]);
+  const [turmasEncontradas] = await dbConnection.query('SELECT id_turma FROM turmas WHERE id_turma = ?', [idTurma]);
   const turma = turmasEncontradas[0];
   if (!aluno) {
     throw new Error("ALUNO_NAO_ENCONTRADO");
@@ -69,6 +70,9 @@ app.patch("/alterar-nota/:id_professor/:id_aluno/:id_turma", async (req, res) =>
       return res.status(404).json({ message: "Professor não existe logo não pode alterar nota" })
     }
     await verificarAlunoEProfessorTurma(id_aluno, id_turma, id_professor);
+    if (nota_final !== null && (nota_final < 0 || nota_final > 10)) {
+      return res.status(400).json({ message: "A nota deve ser entre 0 e 10 ou ser null" })
+    }
     await dbConnection.query('UPDATE alunos SET nota_final = ? WHERE id_aluno = ?', [nota_final, id_aluno]);
 
     res.json({ notaFinal: "Nota atualizada" })
@@ -84,28 +88,37 @@ app.patch("/alterar-nota/:id_professor/:id_aluno/:id_turma", async (req, res) =>
 
 app.patch("/alterar-status/:id_professor/:id_aluno/:id_turma", async (req, res) => {
   try {
-    const { id_professor, id_aluno, id_turma, status } = req.params;
+    const { id_professor, id_aluno, id_turma } = req.params;
+    const { status } = req.params;
 
-
-    const [buscarNotaNoBanco] = await dbConnection.query('SELECT nota_final FROM alunos WHERE nota_final = ?', [nota_final])
-    const notafinalDoAluno = buscarNotaNoBanco[0]
+    const statusFormatado = status?.toUpperCase();
+    if (!statusValidos.includes(statusFormatado)) {
+      return res.status(400).json({ message: "Status inválido! Use: APROVADO, REPROVADO ou PENDENTE." });
+    }
 
     await buscarAlunoETurma(id_aluno, id_turma);
-    if (!id_professor == null) {
-      return res.status(404).json({ message: "Professor não existe logo não pode alterar status" })
-    }
-    await verificarAlunoEProfessorTurma(id_aluno, id_turma, id_professor)
+    await verificarAlunoEProfessorTurma(id_aluno, id_turma, id_professor);
 
-    if (!notafinalDoAluno) {
-      return res.status(404).json({ message: "Aluno sem nota, não é possivel mudar o status" });
+    const [alunos] = await dbConnection.query('SELECT nota_final FROM alunos WHERE id_aluno = ?', [id_aluno]);
+    const notafinalDoAluno = alunos[0]?.nota_final;
+
+    if (statusFormatado === "APROVADO") {
+      if (notafinalDoAluno == null) {
+        return res.status(400).json({ message: "O Aluno tá sem nota, não é possível mudar o status para APROVADO" });
+      }
+      if (notafinalDoAluno < 7) {
+        return res.status(400).json({ message: "Nota insuficiente para aprovação, menor que 7." });
+      }
     }
-    if (notafinalDoAluno >= 7 && notafinalDoAluno <= 10) {
-      await dbConnection.query('UPDATE alunos SET status = ? WHERE id_aluno = ?', [status, id_aluno]);
-    }
-    res.json({ notaFinal: "Status atualizado" })
+    await dbConnection.query('UPDATE alunos SET status = ? WHERE id_aluno = ?', [statusFormatado, id_aluno]);
+
+    return res.json({ message: "Status atualizado com sucesso!" });
   } catch (e) {
+    if (e.status) {
+      return res.status(e.status).json({ message: e.message });
+    }
     console.log(e);
-    res.status(500).json({ error: "Erro interno no servidor" });
+    return res.status(500).json({ error: "Erro interno no servidor" });
   }
 })
 
